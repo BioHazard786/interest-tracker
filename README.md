@@ -30,7 +30,6 @@ You'll need these to get the party started:
 
 - `DATABASE_URL`: Your Postgres database string.
 - `BETTER_AUTH_SECRET`: Mash your keyboard valid link key.
-- `BETTER_AUTH_URL`: Your app's URL.
 
 **For Google Login (mandatory):**
 
