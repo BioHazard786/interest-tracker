@@ -12,7 +12,6 @@ Welcome to the **Interest Tracker**, the app that helps you identify that pesky 
 - **Punjab National Bank (CSV)** 🦁
 
 </details>
-<br/>
 
 _Have a different bank?_
 
@@ -42,6 +41,21 @@ You'll need these to get the party started:
 
 - [Better Auth Google OAuth Docs](https://www.better-auth.com/docs/authentication/google)
 - [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+
+### 🗄️ Database Setup
+
+Before you can track any sins, you need to tell your database what they look like.
+
+```bash
+# Generate migrations (Create the blueprint)
+npm run drizzle:generate
+
+# Push changes directly (For when you like living on the edge)
+npm run drizzle:push
+
+# Migrate properly (For the responsible adults)
+npm run drizzle:migrate
+```
 
 ## 📝 License
 

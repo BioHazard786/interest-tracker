@@ -116,6 +116,8 @@ export function StatementAnalyzer() {
         return
       }
 
+      uniqueTransactions.sort((a, b) => b.date.getTime() - a.date.getTime())
+
       setTransactions(uniqueTransactions)
       setIsDialogOpen(true)
       setIsProcessing(false)
