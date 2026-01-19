@@ -26,7 +26,9 @@ export function InterestTable({ transactions }: InterestTableProps) {
         <TableHeader>
           <TableRow>
             <TableHead>Date</TableHead>
-            <TableHead>Transaction ID</TableHead>
+            <TableHead>
+              {transactions[0]?.transactionId ? "Transaction ID" : "Transaction Hash"}
+            </TableHead>
             <TableHead className="text-right">Amount</TableHead>
           </TableRow>
         </TableHeader>
@@ -51,7 +53,7 @@ export function InterestTable({ transactions }: InterestTableProps) {
                   }).format(txn.date)}
                 </TableCell>
                 <TableCell className="font-mono text-muted-foreground">
-                  {txn.transactionId || "-"}
+                  {txn.transactionId || txn.transactionHash.slice(0, 12)}
                 </TableCell>
                 <TableCell className="text-right">
                   {new Intl.NumberFormat("en-IN", {

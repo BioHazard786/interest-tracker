@@ -1,6 +1,6 @@
-/** biome-ignore-all lint/suspicious/noExplicitAny: BS */
 import { getUserID } from "@/lib/auth-client"
 import type { BankParser, Transaction } from "@/lib/banking/types"
+import { parseDDMMYYYY } from "@/lib/utils"
 import { createHash } from "node:crypto"
 import Papa from "papaparse"
 
@@ -9,11 +9,13 @@ export const PNBParser: BankParser = {
   id: "pnb-one",
   name: "Punjab National Bank (PNB ONE)",
 
-  canParse(content: string): boolean {
+  canParse(content: string | File): boolean {
+    if (typeof content !== "string") return false
     return content.includes("PNB ONE") || content.includes("PUNB")
   },
 
-  async parse(content: string): Promise<Transaction[]> {
+  async parse(content: string | File): Promise<Transaction[]> {
+    if (typeof content !== "string") throw new Error("PNB Parser only supports CSV content")
     const lines = content.split(LINE_REGEX)
     const headerLineIndex = lines.findIndex(
       line => line.includes("Txn No.") && line.includes("Txn Date"),
@@ -49,7 +51,12 @@ export const PNBParser: BankParser = {
 
       const transactionId = row["Txn No."]?.toString() || undefined
       const txnDateStr = row["Txn Date"] || ""
-      const txnDate = new Date(txnDateStr)
+      const txnDate = parseDDMMYYYY(txnDateStr)
+
+      if (Number.isNaN(txnDate.getTime())) {
+        continue // Skip invalid dates
+      }
+
       const drAmount = Number.parseFloat(row["Dr Amount"] || "0")
       const crAmount = Number.parseFloat(row["Cr Amount"] || "0")
       const amount = crAmount - drAmount // Positive for Credit (Interest received), Negative for Debit

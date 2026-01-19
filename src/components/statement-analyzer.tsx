@@ -20,12 +20,13 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { formatBytes, useFileUpload } from "@/hooks/use-file-upload"
 import { detectParser } from "@/lib/banking/registry"
-import type { Transaction } from "@/lib/banking/types"
+import type { BankParser, Transaction } from "@/lib/banking/types"
 import { syncTransactionsToDb } from "@/server/action"
 import {
   IconAlertCircle,
   IconFileDescription,
   IconFileTypeCsv,
+  IconFileTypeXls,
   IconRefresh,
   IconTrash,
   IconUpload,
@@ -57,7 +58,7 @@ export function StatementAnalyzer() {
       getInputProps,
     },
   ] = useFileUpload({
-    accept: "text/csv",
+    accept: ".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     maxFiles,
     multiple: true,
   })
@@ -72,6 +73,9 @@ export function StatementAnalyzer() {
 
     if (fileType.includes("csv") || fileName.endsWith(".csv")) {
       return <IconFileTypeCsv className="size-4 opacity-60" />
+    }
+    if (fileType.includes("xlsx") || fileName.endsWith(".xlsx")) {
+      return <IconFileTypeXls className="size-4 opacity-60" />
     }
     return <IconFileDescription className="size-4 opacity-60" />
   }, [])
@@ -92,14 +96,22 @@ export function StatementAnalyzer() {
       const results = await Promise.all(
         validFiles.map(async fileObj => {
           const file = fileObj.file as File
-          const text = await file.text()
-          const parser = detectParser(text)
+          let parser: BankParser | null = null
+          let content: string | File
+
+          if (file.name.toLowerCase().endsWith(".xlsx")) {
+            content = file
+            parser = detectParser(content)
+          } else {
+            content = await file.text()
+            parser = detectParser(content)
+          }
 
           if (!parser) {
             throw new Error(`Could not detect a supported bank format for file: ${file.name}`)
           }
 
-          return parser.parse(text)
+          return parser.parse(content)
         }),
       )
 

@@ -11,6 +11,6 @@ export interface Transaction {
 export interface BankParser {
   id: string
   name: string
-  canParse(content: string): boolean
-  parse(content: string): Promise<Transaction[]>
+  canParse(content: string | File): Promise<boolean> | boolean
+  parse(content: string | File): Promise<Transaction[]>
 }
