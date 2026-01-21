@@ -3,19 +3,22 @@
 import { db } from "@/db/drizzle"
 import { interestProjection } from "@/db/schema"
 import { auth } from "@/lib/auth"
-import { and, asc, desc, eq, lt, or } from "drizzle-orm"
+import { and, asc, desc, eq, inArray, lt, or } from "drizzle-orm"
 import { headers } from "next/headers"
 
 export type InterestProjection = typeof interestProjection.$inferSelect
+export type StatusFilter = InterestProjection["status"][]
 
 export async function getInterestProjection({
   cursor,
   limit = 50,
   sortDirection = "desc",
+  statusFilter,
 }: {
   cursor?: string
   limit?: number
   sortDirection?: "asc" | "desc"
+  statusFilter?: StatusFilter
 } = {}) {
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -50,6 +53,9 @@ export async function getInterestProjection({
     .where(
       and(
         eq(interestProjection.userId, session.user.id),
+        statusFilter && statusFilter.length > 0
+          ? inArray(interestProjection.status, statusFilter)
+          : undefined,
         cursorDate && cursorId
           ? or(
               lt(interestProjection.transactionDate, cursorDate),

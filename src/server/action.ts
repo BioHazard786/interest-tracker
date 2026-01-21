@@ -11,19 +11,23 @@ import { after } from "next/server"
 import { z } from "zod"
 
 // Validation schema for incoming transactions
-const transactionSchema = z.array(
-  z.object({
-    transactionHash: z.string().min(1, "Transaction hash is required"),
-    amount: z.number().transform(String),
-    balance: z.number(),
-    date: z.date().transform(d => d.toISOString().split("T")[0]),
-    type: z.enum(["credit", "debit"]).optional().default("credit"),
-    description: z.string().optional(),
-    transactionId: z.string().optional(),
-  }),
-)
+const transactionSchema = z.object({
+  bankId: z.string().min(1, "Bank ID is required"),
+  transactions: z.array(
+    z.object({
+      transactionHash: z.string().min(1, "Transaction hash is required"),
+      amount: z.number().transform(String),
+      balance: z.number(),
+      date: z.date().transform(d => d.toISOString().split("T")[0]),
+      type: z.enum(["credit", "debit"]).optional().default("credit"),
+      description: z.string().optional(),
+      transactionId: z.string().optional(),
+    }),
+  ),
+})
 
 export async function syncTransactionsToDb(
+  bankId: string,
   transactions: ClientTransaction[],
 ): Promise<{ success: boolean; message: string }> {
   try {
@@ -40,10 +44,10 @@ export async function syncTransactionsToDb(
     }
 
     // Validate input data
-    const validatedTransactions = transactionSchema.safeParse(transactions)
+    const validatedData = transactionSchema.safeParse({ bankId, transactions })
 
-    if (!validatedTransactions.success) {
-      console.log(validatedTransactions.error)
+    if (!validatedData.success) {
+      console.log(validatedData.error)
       return {
         success: false,
         message: "No transactions to sync",
@@ -55,8 +59,9 @@ export async function syncTransactionsToDb(
     await db
       .insert(interestTransaction)
       .values(
-        validatedTransactions.data.map(txn => ({
+        validatedData.data.transactions.map(txn => ({
           userId: session.user.id,
+          bankId: validatedData.data.bankId,
           transactionHash: txn.transactionHash,
           amount: txn.amount,
           date: txn.date,
@@ -96,6 +101,27 @@ export async function syncTransactionsToDb(
       message: "An unexpected error occurred while syncing transactions",
     }
   }
+}
+
+export async function getLastTransactionDateByBank(): Promise<Record<string, string | null>> {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  })
+
+  if (!session) {
+    return {}
+  }
+
+  const results = await db
+    .select({
+      bankId: interestTransaction.bankId,
+      lastDate: sql<string>`max(${interestTransaction.date})`,
+    })
+    .from(interestTransaction)
+    .where(eq(interestTransaction.userId, session.user.id))
+    .groupBy(interestTransaction.bankId)
+
+  return Object.fromEntries(results.map(r => [r.bankId, r.lastDate]))
 }
 
 export async function getDashboardStats() {
@@ -235,6 +261,7 @@ export async function reconcileUserInterests(userId: string) {
 
     projectionUpdates.push({
       userId: userId,
+      bankId: interest.bankId,
       transactionHash: interest.transactionHash,
       transactionId: interest.transactionId,
       amount: interest.amount,
@@ -256,6 +283,7 @@ export async function reconcileUserInterests(userId: string) {
       .onConflictDoUpdate({
         target: interestProjection.transactionHash,
         set: {
+          bankId: sql`excluded.bank_id`,
           donatedAmount: sql`excluded.donated_amount`,
           remainingAmount: sql`excluded.remaining_amount`,
           status: sql`excluded.status`,

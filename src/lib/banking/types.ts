@@ -11,6 +11,14 @@ export interface Transaction {
 export interface BankParser {
   id: string
   name: string
-  canParse(content: string | File): Promise<boolean> | boolean
-  parse(content: string | File): Promise<Transaction[]>
+  parse(file: File, userID: string): Promise<Transaction[]>
+}
+
+export type FileFormat = "csv" | "xlsx" | "pdf"
+
+export interface BankInfo {
+  id: string
+  name: string
+  formats: FileFormat[]
+  load: () => Promise<{ default: BankParser } | BankParser>
 }

@@ -28,7 +28,10 @@
 *.pem
 *.csv
 *.xlsx
+*.pdf
 test.ts
+extract-pdf.ts
+output.txt
 
 # debug
 npm-debug.log*

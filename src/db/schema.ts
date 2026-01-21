@@ -19,6 +19,8 @@ export const interestTransaction = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
 
+    bankId: text("bank_id").notNull(),
+
     transactionId: text("transaction_id"),
     transactionHash: text("transaction_hash").notNull(),
 
@@ -35,6 +37,7 @@ export const interestTransaction = pgTable(
     uniqueIndex("interest_hash_unique").on(table.transactionHash),
     index("interest_user_idx").on(table.userId),
     index("interest_date_idx").on(table.date),
+    index("interest_bank_idx").on(table.bankId),
   ],
 )
 
@@ -76,6 +79,8 @@ export const interestProjection = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
 
+    bankId: text("bank_id").notNull(),
+
     transactionHash: text("transaction_hash")
       .notNull()
       .references(() => interestTransaction.transactionHash, { onDelete: "cascade" }),
@@ -99,6 +104,7 @@ export const interestProjection = pgTable(
     index("projection_date_idx").on(table.transactionDate),
     index("projection_user_idx").on(table.userId),
     index("projection_status_idx").on(table.status),
+    index("projection_bank_idx").on(table.bankId),
   ],
 )
 

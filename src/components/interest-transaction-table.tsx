@@ -11,13 +11,18 @@ import {
 } from "@/components/ui/card"
 import { DataTable } from "@/components/ui/data-table"
 import { type InterestProjection } from "@/db/schema"
+import { getBankById } from "@/lib/banking/registry"
 import { interestTransactionOptions } from "@/lib/interest-transaction-options"
+import { cn } from "@/lib/utils"
+import { type StatusFilter } from "@/server/projection-action"
 import {
   IconArrowDown,
   IconArrowUp,
   IconArrowsSort,
+  IconCheck,
   IconCircleCheckFilled,
   IconCircleXFilled,
+  IconFilter,
   IconLoader,
   IconLoader3,
   IconRefresh,
@@ -26,6 +31,7 @@ import { useInfiniteQuery } from "@tanstack/react-query"
 import { type ColumnDef, type SortingState } from "@tanstack/react-table"
 import { useMemo, useState } from "react"
 import { Badge } from "./ui/badge"
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
 
 // Define columns
 export const columns: ColumnDef<InterestProjection>[] = [
@@ -39,11 +45,11 @@ export const columns: ColumnDef<InterestProjection>[] = [
         >
           Date
           {column.getIsSorted() === "asc" ? (
-            <IconArrowUp className="ml-2 size-4" />
+            <IconArrowUp className="text-muted-foreground" />
           ) : column.getIsSorted() === "desc" ? (
-            <IconArrowDown className="ml-2 size-4" />
+            <IconArrowDown className="text-muted-foreground" />
           ) : (
-            <IconArrowsSort className="ml-2 size-4" />
+            <IconArrowsSort className="text-muted-foreground" />
           )}
         </Button>
       )
@@ -58,6 +64,15 @@ export const columns: ColumnDef<InterestProjection>[] = [
           }).format(new Date(row.getValue("transactionDate")))}
         </div>
       )
+    },
+  },
+  {
+    accessorKey: "bankId",
+    header: "Bank",
+    cell: ({ row }) => {
+      const bankId = row.getValue("bankId") as string
+      const bank = getBankById(bankId)
+      return <div className="text-muted-foreground">{bank?.name || bankId}</div>
     },
   },
   {
@@ -86,6 +101,9 @@ export const columns: ColumnDef<InterestProjection>[] = [
           {getStatusBadge(row.getValue("status"))}
         </Badge>
       )
+    },
+    meta: {
+      filterComponent: null, // Will be set dynamically
     },
   },
   {
@@ -129,18 +147,127 @@ function getStatusBadge(status: InterestProjection["status"]): React.ReactNode {
   }
 }
 
+const STATUS_OPTIONS = [
+  { value: "not_donated", label: "Not Donated" },
+  { value: "partially_donated", label: "Partially Donated" },
+  { value: "fully_donated", label: "Donated" },
+] as const
+
+function StatusFilterPopover({
+  statusFilter,
+  onStatusFilterChange,
+}: {
+  statusFilter: StatusFilter | undefined
+  onStatusFilterChange: (filter: StatusFilter | undefined) => void
+}) {
+  const toggleStatus = (status: InterestProjection["status"]) => {
+    if (!statusFilter || statusFilter.length === 0) {
+      onStatusFilterChange([status])
+    } else if (statusFilter.includes(status)) {
+      const newFilter = statusFilter.filter(s => s !== status)
+      onStatusFilterChange(newFilter.length > 0 ? newFilter : undefined)
+    } else {
+      onStatusFilterChange([...statusFilter, status])
+    }
+  }
+
+  const isSelected = (status: InterestProjection["status"]) =>
+    statusFilter?.includes(status) ?? false
+
+  const hasActiveFilter = statusFilter && statusFilter.length > 0
+
+  return (
+    <Popover>
+      <PopoverTrigger
+        render={
+          <Button variant="ghost">
+            Status
+            <IconFilter
+              className={cn({
+                "text-primary": hasActiveFilter,
+                "text-muted-foreground": !hasActiveFilter,
+              })}
+            />
+            {hasActiveFilter && (
+              <span className="flex size-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
+                {statusFilter.length}
+              </span>
+            )}
+          </Button>
+        }
+      />
+      <PopoverContent className="w-48 p-1" align="start">
+        <div className="flex flex-col">
+          {STATUS_OPTIONS.map(option => (
+            <Button
+              key={option.value}
+              variant="ghost"
+              className="justify-start gap-2 font-normal"
+              onClick={() => toggleStatus(option.value)}
+            >
+              <span
+                className={`flex size-4 items-center justify-center rounded border ${
+                  isSelected(option.value)
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-muted-foreground/30"
+                }`}
+              >
+                {isSelected(option.value) && <IconCheck className="size-3" />}
+              </span>
+              {option.label}
+            </Button>
+          ))}
+          {hasActiveFilter && (
+            <>
+              <div className="my-1 h-px bg-border" />
+              <Button
+                variant="ghost"
+                className="justify-start font-normal text-muted-foreground"
+                onClick={() => onStatusFilterChange(undefined)}
+              >
+                Clear filter
+              </Button>
+            </>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
 function InterestTransactionTable() {
   const [sorting, setSorting] = useState<SortingState>([{ id: "transactionDate", desc: true }])
+  const [statusFilter, setStatusFilter] = useState<StatusFilter | undefined>(undefined)
 
   // Get sort direction for the query
   const sortDirection = sorting[0]?.desc ? "desc" : "asc"
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteQuery(
-    interestTransactionOptions(sortDirection),
+    interestTransactionOptions(sortDirection, statusFilter),
   )
 
   // Flatten data
   const flatData = useMemo(() => data?.pages.flatMap(page => page.data) ?? [], [data])
+
+  // Create columns with dynamic status filter header
+  const columnsWithFilter = useMemo<ColumnDef<InterestProjection>[]>(
+    () =>
+      columns.map(col => {
+        if ("accessorKey" in col && col.accessorKey === "status") {
+          return {
+            ...col,
+            header: () => (
+              <StatusFilterPopover
+                statusFilter={statusFilter}
+                onStatusFilterChange={setStatusFilter}
+              />
+            ),
+          }
+        }
+        return col
+      }),
+    [statusFilter],
+  )
 
   if (isLoading) {
     return (
@@ -168,7 +295,7 @@ function InterestTransactionTable() {
       </CardHeader>
       <CardContent className="px-0 md:px-6">
         <DataTable
-          columns={columns}
+          columns={columnsWithFilter}
           data={flatData}
           sorting={sorting}
           onSortingChange={setSorting}

@@ -9,9 +9,10 @@ Welcome to the **Interest Tracker**, the app that helps you identify that pesky 
 <details>
 <summary>Click to view supported banks</summary>
 
-- **Punjab National Bank (CSV)** 🦁
-- **Kotak Mahindra Bank (CSV)** 🏦
-- **State Bank of India (XLSX)** 🏦
+- **Punjab National Bank (CSV)**
+- **Kotak Mahindra Bank (CSV)**
+- **State Bank of India (XLSX)**
+- **IDFC First Bank (XLSX, PDF)**
 
 </details>
 

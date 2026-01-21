@@ -86,6 +86,7 @@ export function ResponsiveDialogContent({
   const isMobile = useIsMobile()
 
   if (isMobile) {
+    delete props.disableCloseButton
     return (
       <DrawerContent className={className} {...props}>
         {children}

@@ -1,15 +1,50 @@
-import { KotakParser } from "./parsers/kotak"
-import { PNBParser } from "./parsers/pnb"
-import { SBIParser } from "./parsers/sbi"
-import type { BankParser } from "./types"
+import type { BankInfo, BankParser, FileFormat } from "./types"
 
-export const parsers: BankParser[] = [PNBParser, KotakParser, SBIParser]
+export const banks: BankInfo[] = [
+  {
+    id: "in-pnb",
+    name: "Punjab National Bank",
+    formats: ["csv"],
+    load: () => import("./parsers/pnb").then(m => m.PNBParser),
+  },
+  {
+    id: "in-kotak",
+    name: "Kotak Mahindra Bank",
+    formats: ["pdf"],
+    load: () => import("./parsers/kotak").then(m => m.KotakParser),
+  },
+  {
+    id: "in-sbi",
+    name: "State Bank of India",
+    formats: ["xlsx"],
+    load: () => import("./parsers/sbi").then(m => m.SBIParser),
+  },
+  {
+    id: "in-idfc",
+    name: "IDFC First Bank",
+    formats: ["xlsx", "pdf"],
+    load: () => import("./parsers/idfc").then(m => m.IDFCParser),
+  },
+]
 
-export function detectParser(content: string | File): BankParser | null {
-  for (const parser of parsers) {
-    if (parser.canParse(content)) {
-      return parser
-    }
+export function getBankById(id: string): BankInfo | undefined {
+  return banks.find(bank => bank.id === id)
+}
+
+export async function loadParser(bankId: string): Promise<BankParser> {
+  const bank = getBankById(bankId)
+  if (!bank) {
+    throw new Error(`Unknown bank: ${bankId}`)
   }
-  return null
+  const parser = await bank.load()
+  return "default" in parser ? parser.default : parser
+}
+
+export function getAcceptedFileTypes(formats: FileFormat[]): string {
+  const mimeTypes: Record<FileFormat, string[]> = {
+    csv: [".csv", "text/csv"],
+    xlsx: [".xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"],
+    pdf: [".pdf", "application/pdf"],
+  }
+  return formats.flatMap(f => mimeTypes[f]).join(",")
 }

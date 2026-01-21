@@ -3,12 +3,15 @@ import { StatementAnalyzer } from "@/components/statement-analyzer"
 import { StatsCard } from "@/components/stats-card"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { getDashboardStats } from "@/server/action"
+import { getDashboardStats, getLastTransactionDateByBank } from "@/server/action"
 import { IconMoodSadDizzy, IconMoodSick } from "@tabler/icons-react"
 import Link from "next/link"
 
-export async function Dashboard() {
-  const { totalInterest, totalDonated } = await getDashboardStats()
+export async function Dashboard({ userID }: { userID: string }) {
+  const [{ totalInterest, totalDonated }, lastTransactionDates] = await Promise.all([
+    getDashboardStats(),
+    getLastTransactionDateByBank(),
+  ])
   const amountLeft = totalInterest - totalDonated
 
   return (
@@ -28,9 +31,12 @@ export async function Dashboard() {
                 value={totalInterest}
                 icon={<IconMoodSick />}
                 action={
-                  <Button size="sm" variant="outline" asChild>
-                    <Link href="/interest/transactions">View</Link>
-                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    render={<Link href="/interest/transactions">View</Link>}
+                    nativeButton={false}
+                  />
                 }
               />
 
@@ -39,7 +45,7 @@ export async function Dashboard() {
               <StatsCard description="Amount Left" value={amountLeft} icon={<IconMoodSadDizzy />} />
             </div>
 
-            <StatementAnalyzer />
+            <StatementAnalyzer userID={userID} lastTransactionDates={lastTransactionDates} />
           </CardContent>
         </Card>
       </main>

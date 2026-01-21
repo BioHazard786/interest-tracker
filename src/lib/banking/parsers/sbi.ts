@@ -1,113 +1,111 @@
-import { parseDDMMYYYY } from "@/lib/utils"
-// @ts-ignore
-import { getUserID } from "@/lib/auth-client"
 import type { BankParser, Transaction } from "@/lib/banking/types"
-import { createHash } from "node:crypto"
-import readXlsxFile from "read-excel-file"
+import { generateHash, parseDDMMYYYY } from "@/lib/utils"
+import readXlsxFile, { type Row, type Schema } from "read-excel-file"
+
+interface ParsedRow {
+  date?: Date
+  details?: string
+  debit?: number
+  credit?: number
+  balance?: number
+}
+
+// Schema for SBI bank statement parsing
+// Keys are property names, 'column' specifies the Excel header to match
+const schema: Schema<ParsedRow> = {
+  date: {
+    column: "Date",
+    type: (value: unknown) => {
+      if (value instanceof Date) return value
+      if (typeof value === "string") return parseDDMMYYYY(value)
+      return undefined
+    },
+  },
+  details: {
+    column: "Details",
+    type: String,
+  },
+  debit: {
+    column: "Debit",
+    type: (value: unknown) => {
+      if (typeof value === "number") return value
+      if (typeof value === "string") return Number.parseFloat(value.replace(/,/g, "")) || 0
+      return 0
+    },
+  },
+  credit: {
+    column: "Credit",
+    type: (value: unknown) => {
+      if (typeof value === "number") return value
+      if (typeof value === "string") return Number.parseFloat(value.replace(/,/g, "")) || 0
+      return 0
+    },
+  },
+  balance: {
+    column: "Balance",
+    type: (value: unknown) => {
+      if (typeof value === "number") return value
+      if (typeof value === "string") return Number.parseFloat(value.replace(/,/g, "")) || 0
+      return 0
+    },
+  },
+}
+
+// Check if description contains interest-related keywords
+function isInterestTransaction(description: string): boolean {
+  const normalized = description
+    .replace(/[\r\n]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase()
+
+  return normalized.includes("interes t credit")
+}
+
+// Find header row and slice data - all in one transformData call
+function findHeaderAndSlice(data: Row[]): Row[] {
+  const headerIndex = data.findIndex(
+    row =>
+      row.some(cell => typeof cell === "string" && cell.toLowerCase().includes("debit")) &&
+      row.some(cell => typeof cell === "string" && cell.toLowerCase().includes("credit")),
+  )
+
+  if (headerIndex === -1) {
+    throw new Error("Could not find transaction header row in SBI Statement")
+  }
+
+  return data.slice(headerIndex)
+}
 
 export const SBIParser: BankParser = {
-  id: "sbi",
+  id: "in-sbi",
   name: "State Bank of India",
 
-  canParse(content: string | File): boolean {
-    if (typeof content === "string") return false
-    // Basic check for Excel file type or extension
-    // content is a File object here
-    return (
-      content.name.toLowerCase().endsWith(".xlsx") ||
-      content.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
-  },
-
-  async parse(content: string | File): Promise<Transaction[]> {
-    if (typeof content === "string") {
-      throw new Error("SBI Parser requires an Excel file (XLSX)")
-    }
-
-    const rows = await readXlsxFile(content)
+  async parse(file: File, userID: string): Promise<Transaction[]> {
     const transactions: Transaction[] = []
-    const userID = await getUserID()
 
-    // Find header row: contains "Txn Date" or "Date" AND "Debit" AND "Credit"
-    const headerIndex = rows.findIndex(
-      (row: any[]) =>
-        row.some(cell => typeof cell === "string" && cell.toLowerCase().includes("debit")) &&
-        row.some(cell => typeof cell === "string" && cell.toLowerCase().includes("credit")),
-    )
+    // Single read with schema + transformData that finds header and slices
+    const { rows } = await readXlsxFile<ParsedRow>(file, {
+      schema,
+      transformData: findHeaderAndSlice,
+    })
 
-    if (headerIndex === -1) {
-      throw new Error("Could not find transaction header row in SBI Statement")
-    }
+    // Process each parsed row
+    for (const row of rows) {
+      if (!row.date || !row.details) continue
+      if (Number.isNaN(row.date.getTime())) continue
+      if (!isInterestTransaction(row.details)) continue
 
-    // Data starts from the next row
-    // Column Mapping based on inspection:
-    // 0: Txn Date
-    // 1: Description / Details
-    // 2: Ref No (can be null)
-    // 3: Debit
-    // 4: Credit
-    // 5: Balance
+      const amount = (row.credit || 0) - (row.debit || 0)
+      const balance = row.balance || 0
 
-    for (let i = headerIndex + 1; i < rows.length; i++) {
-      const row = rows[i]
-      // Ensure row has enough columns
-      if (!row || row.length < 6) continue
-
-      const description = (row[1] || "").toString()
-      // Normalize: remove newlines, collapse multiple spaces
-      const descNormalized = description
-        .replace(/[\r\n]+/g, " ")
-        .replace(/\s+/g, " ")
-        .trim()
-        .toLowerCase()
-
-      // Filter for Interest
-      // "INTERES T CREDIT" -> "interes t credit" (matches user case)
-      if (
-        !descNormalized.includes("interest") &&
-        !descNormalized.includes("int.pd") &&
-        !descNormalized.includes("interes t credit")
-      ) {
-        continue
-      }
-
-      const dateStr = row[0]
-      let date: Date
-      if (typeof dateStr === "string") {
-        date = parseDDMMYYYY(dateStr as string)
-      } else {
-        continue
-      }
-
-      if (Number.isNaN(date.getTime())) continue
-
-      const debit =
-        typeof row[3] === "number"
-          ? row[3]
-          : Number.parseFloat((row[3] || "0").toString().replace(/,/g, ""))
-      const credit =
-        typeof row[4] === "number"
-          ? row[4]
-          : Number.parseFloat((row[4] || "0").toString().replace(/,/g, ""))
-
-      // SBI Debit/Credit are exclusive usually, but let's be safe
-      const amount = (credit || 0) - (debit || 0)
-
-      const balance =
-        typeof row[5] === "number"
-          ? row[5]
-          : Number.parseFloat((row[5] || "0").toString().replace(/,/g, ""))
-
-      const transactionId = (row[2] || "").toString() || undefined // Ref No
-
-      const hashData = `${date.toISOString()}|${description}|${amount}|${balance}|${userID || ""}|${transactionId || ""}`
-      const transactionHash = createHash("sha256").update(hashData).digest("hex")
+      const hashData = `${row.date.toISOString()}|${row.details}|${amount}|${balance}|${userID || ""}`
+      const transactionHash = await generateHash(hashData)
 
       transactions.push({
-        transactionId,
         transactionHash,
-        date,
-        description,
+        date: row.date,
+        description: row.details,
         amount,
         type: amount >= 0 ? "credit" : "debit",
         balance,

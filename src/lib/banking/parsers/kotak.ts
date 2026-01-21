@@ -1,93 +1,55 @@
-import { getUserID } from "@/lib/auth-client"
 import type { BankParser, Transaction } from "@/lib/banking/types"
-import { createHash } from "node:crypto"
-import Papa from "papaparse"
+import { generateHash } from "@/lib/utils"
+import pdf2md from "@opendocsg/pdf2md"
 
 const LINE_REGEX = /\r\n|\n/
+const INTEREST_REGEX = /Int\.Pd:/i
+
+// Matches lines like: " 131 31 Mar 2025 Int.Pd:6347718530:01-01-2025 to 31-03-2025 12.00 2,704.39"
+// Format: # DATE DESCRIPTION AMOUNT BALANCE
+const TRANSACTION_LINE_REGEX =
+  /^\s*(\d+)\s+(\d{1,2}\s+\w{3}\s+\d{4})\s+(Int\.Pd:[^\s]+(?:\s+to\s+\d{2}-\d{2}-\d{4})?)\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s*$/i
+
+function parseAmount(amountStr: string): number {
+  return Number.parseFloat(amountStr.replace(/,/g, ""))
+}
 
 export const KotakParser: BankParser = {
-  id: "kotak-811",
+  id: "in-kotak",
   name: "Kotak Mahindra Bank",
 
-  canParse(content: string | File): boolean {
-    if (typeof content !== "string") return false
-    // Kotak statements often contain "KKBK" (IFSC) or "Kotak" headers
-    // Based on the file provided, it has "IFSC Code KKBK..."
-    return content.includes("KKBK") || content.includes("Kotak")
-  },
+  async parse(file: File, userID: string): Promise<Transaction[]> {
+    const pdfBuffer = await file.arrayBuffer()
+    const markdown = await pdf2md(pdfBuffer)
 
-  async parse(content: string | File): Promise<Transaction[]> {
-    if (typeof content !== "string") throw new Error("Kotak Parser only supports CSV content")
-    const lines = content.split(LINE_REGEX)
-    // The header row in the provided CSV is: #,Date,Description,Chq/Ref. No.,Withdrawal (Dr.),Deposit (Cr.),Balance
-    const headerLineIndex = lines.findIndex(
-      line =>
-        line.includes("Date") && line.includes("Description") && line.includes("Withdrawal (Dr.)"),
-    )
-
-    if (headerLineIndex === -1) {
-      throw new Error("Could not find transaction header row (Date, Description, Withdrawal)")
-    }
-
-    const csvContent = lines.slice(headerLineIndex).join("\n")
-
-    const result = Papa.parse(csvContent, {
-      header: true,
-      skipEmptyLines: true,
-      dynamicTyping: false,
-    })
-
+    const lines = markdown.split(LINE_REGEX)
     const transactions: Transaction[] = []
-    const userID = await getUserID()
 
-    for (const row of result.data as any[]) {
-      // Columns: #, Date, Description, Chq/Ref. No., Withdrawal (Dr.), Deposit (Cr.), Balance
+    for (const line of lines) {
+      // Skip lines that don't contain interest
+      if (!INTEREST_REGEX.test(line)) continue
 
-      const description = row.Description || ""
+      const match = line.match(TRANSACTION_LINE_REGEX)
+      if (!match) continue
 
-      // Filter logic: We want Interest entries.
-      // Kotak Interest entries usually look like "Int.Pd:..."
-      if (!description.toLowerCase().includes("int.pd")) {
-        continue
-      }
+      const [, , dateStr, description, amountStr, balanceStr] = match
 
-      // Date format: "01 Jan 2025"
-      const dateStr = row.Date || ""
-      const date = new Date(dateStr)
-      if (Number.isNaN(date.getTime())) {
-        continue // Skip invalid dates
-      }
+      const txnDate = new Date(dateStr)
+      if (Number.isNaN(txnDate.getTime())) continue
 
-      const withdrawal = Number.parseFloat((row["Withdrawal (Dr.)"] || "0").replace(/,/g, ""))
-      const deposit = Number.parseFloat((row["Deposit (Cr.)"] || "0").replace(/,/g, ""))
+      const amount = parseAmount(amountStr)
+      const balance = parseAmount(balanceStr)
 
-      // Interest is usually a credit (Deposit)
-      // Note: withdrawals are positive numbers in the column, so we subtract them if calculating net
-      // But for interest, it should be a deposit.
-
-      let amount = 0
-      if (deposit > 0) {
-        amount = deposit
-      } else if (withdrawal > 0) {
-        amount = -withdrawal
-      }
-
-      const balance = Number.parseFloat((row.Balance || "0").replace(/,/g, ""))
-
-      const transactionId = row["Chq/Ref. No."] || undefined
-
-      // Generate unique transaction hash
-      // Using similar logic to PNB parser for consistency
-      const hashData = `${dateStr}|${description}|${amount}|${balance}|${userID || ""}|${transactionId || ""}`
-      const transactionHash = createHash("sha256").update(hashData).digest("hex")
+      // Interest is always a credit (deposit)
+      const hashData = `${dateStr}|${description}|${amount}|${balance}|${userID || ""}`
+      const transactionHash = await generateHash(hashData)
 
       transactions.push({
-        transactionId,
         transactionHash,
-        date,
-        description,
+        date: txnDate,
+        description: description.trim(),
         amount,
-        type: amount >= 0 ? "credit" : "debit",
+        type: "credit",
         balance,
       })
     }

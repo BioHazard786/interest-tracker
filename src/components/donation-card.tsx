@@ -102,7 +102,7 @@ export function DonationCard({
             {error && <p className="pl-16 text-right text-sm text-destructive">{error}</p>}
           </div>
           <ResponsiveDialogFooter>
-            <Button onClick={handleDonate} disabled={isPending} size="sm">
+            <Button onClick={handleDonate} disabled={isPending}>
               {isPending && <Spinner />}
               {isPending ? "Donating" : "Donate"}
             </Button>

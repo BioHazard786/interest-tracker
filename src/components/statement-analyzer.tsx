@@ -2,6 +2,14 @@
 
 import { Button } from "@/components/ui/button"
 import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox"
+import {
   Empty,
   EmptyContent,
   EmptyDescription,
@@ -19,13 +27,14 @@ import {
 } from "@/components/ui/responsive-dialog"
 import { Spinner } from "@/components/ui/spinner"
 import { formatBytes, useFileUpload } from "@/hooks/use-file-upload"
-import { detectParser } from "@/lib/banking/registry"
-import type { BankParser, Transaction } from "@/lib/banking/types"
+import { banks, getAcceptedFileTypes, loadParser } from "@/lib/banking/registry"
+import type { BankInfo, Transaction } from "@/lib/banking/types"
 import { syncTransactionsToDb } from "@/server/action"
 import {
   IconAlertCircle,
   IconFileDescription,
   IconFileTypeCsv,
+  IconFileTypePdf,
   IconFileTypeXls,
   IconRefresh,
   IconTrash,
@@ -36,7 +45,13 @@ import { useCallback, useMemo, useState, useTransition } from "react"
 import { toast } from "sonner"
 import { InterestTable } from "./interest-table"
 
-export function StatementAnalyzer() {
+interface StatementAnalyzerProps {
+  userID: string
+  lastTransactionDates: Record<string, string | null>
+}
+
+export function StatementAnalyzer({ userID, lastTransactionDates }: StatementAnalyzerProps) {
+  const [selectedBank, setSelectedBank] = useState<BankInfo | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -44,6 +59,10 @@ export function StatementAnalyzer() {
   const [isPending, startTransition] = useTransition()
 
   const maxFiles = 10
+  const acceptedFileTypes = useMemo(
+    () => (selectedBank ? getAcceptedFileTypes(selectedBank.formats) : ""),
+    [selectedBank],
+  )
 
   const [
     { files, isDragging, errors: uploadErrors },
@@ -58,7 +77,7 @@ export function StatementAnalyzer() {
       getInputProps,
     },
   ] = useFileUpload({
-    accept: ".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    accept: acceptedFileTypes,
     maxFiles,
     multiple: true,
   })
@@ -66,6 +85,12 @@ export function StatementAnalyzer() {
   const fileCount = useMemo(() => files.length, [files.length])
   const hasFiles = useMemo(() => fileCount > 0, [fileCount])
   const canAddMore = useMemo(() => fileCount < maxFiles, [fileCount])
+
+  const errors = useMemo(() => {
+    const allErrors: string[] = [...uploadErrors]
+    if (processError) allErrors.push(processError)
+    return allErrors
+  }, [uploadErrors, processError])
 
   const getFileIcon = useCallback((file: { file: File | { type: string; name: string } }) => {
     const fileType = file.file instanceof File ? file.file.type : file.file.type
@@ -77,47 +102,32 @@ export function StatementAnalyzer() {
     if (fileType.includes("xlsx") || fileName.endsWith(".xlsx")) {
       return <IconFileTypeXls className="size-4 opacity-60" />
     }
+    if (fileType.includes("pdf") || fileName.endsWith(".pdf")) {
+      return <IconFileTypePdf className="size-4 opacity-60" />
+    }
     return <IconFileDescription className="size-4 opacity-60" />
   }, [])
 
   const handleProcessFiles = useCallback(async () => {
-    if (files.length === 0) {
-      return
-    }
+    if (files.length === 0 || !selectedBank) return
 
     setIsProcessing(true)
     setProcessError(null)
 
-    // Filter to only File instances before processing
     const validFiles = files.filter(fileObj => fileObj.file instanceof File)
 
     try {
-      // Process all files in parallel for better performance
+      const parser = await loadParser(selectedBank.id)
+
       const results = await Promise.all(
         validFiles.map(async fileObj => {
           const file = fileObj.file as File
-          let parser: BankParser | null = null
-          let content: string | File
-
-          if (file.name.toLowerCase().endsWith(".xlsx")) {
-            content = file
-            parser = detectParser(content)
-          } else {
-            content = await file.text()
-            parser = detectParser(content)
-          }
-
-          if (!parser) {
-            throw new Error(`Could not detect a supported bank format for file: ${file.name}`)
-          }
-
-          return parser.parse(content)
+          return parser.parse(file, userID)
         }),
       )
 
       const allTransactions = results.flat()
 
-      // Remove duplicate transactions based on unique hash
       const uniqueTransactions = Array.from(
         new Map(allTransactions.map(txn => [txn.transactionHash, txn])).values(),
       )
@@ -133,140 +143,184 @@ export function StatementAnalyzer() {
       setTransactions(uniqueTransactions)
       setIsDialogOpen(true)
       setIsProcessing(false)
-      // biome-ignore lint/suspicious/noExplicitAny: BS
     } catch (err: any) {
       setProcessError(err.message || "Failed to process files")
       console.error(err)
       setIsProcessing(false)
     }
-  }, [files])
+  }, [files, selectedBank])
 
   const handleTransactionSync = useCallback(() => {
+    if (!selectedBank) return
+
     startTransition(async () => {
       console.log(transactions)
-      const { success, message } = await syncTransactionsToDb(transactions)
+      const { success, message } = await syncTransactionsToDb(selectedBank.id, transactions)
       if (success) {
         clearFiles()
         setTransactions([])
+        setSelectedBank(null)
         toast.success(message)
       } else {
         toast.error(message)
       }
       setIsDialogOpen(false)
     })
-  }, [transactions, clearFiles])
+  }, [transactions, clearFiles, selectedBank])
 
   return (
     <div className="mx-auto w-full max-w-xl space-y-6">
-      <div className="flex flex-col gap-2">
-        <div
-          className="flex flex-col items-center rounded-xl border border-dashed border-input p-4 transition-colors has-[input:focus]:border-ring has-[input:focus]:ring-[3px] has-[input:focus]:ring-ring/50 data-[dragging=true]:bg-accent/50"
-          data-dragging={isDragging || undefined}
-          data-files={files.length > 0 || undefined}
-          onDragEnter={handleDragEnter}
-          onDragLeave={handleDragLeave}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-        >
-          <input {...getInputProps()} aria-label="Upload files" className="sr-only" />
+      <Combobox
+        items={banks}
+        itemToStringLabel={bank => bank.name}
+        value={selectedBank}
+        onValueChange={bank => {
+          setSelectedBank(bank)
+          clearFiles()
+          setProcessError(null)
+        }}
+      >
+        <ComboboxInput
+          id="bank-select"
+          placeholder="Select Your Bank"
+          className="w-full"
+          showClear
+        />
+        <ComboboxContent>
+          <ComboboxEmpty>No banks found.</ComboboxEmpty>
+          <ComboboxList>
+            {bank => (
+              <ComboboxItem key={bank.id} value={bank}>
+                {bank.name}
+              </ComboboxItem>
+            )}
+          </ComboboxList>
+        </ComboboxContent>
+      </Combobox>
 
-          {hasFiles ? (
-            <div className="flex w-full flex-col gap-3">
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="truncate text-sm font-medium">Uploaded Files ({fileCount})</h3>
-                <Button onClick={clearFiles} size="sm" variant="outline">
-                  <IconTrash aria-hidden="true" className="-ms-0.5 size-3.5 opacity-60" />
-                  Remove all
-                </Button>
-              </div>
-              <div className="w-full space-y-2">
-                {files.map(file => (
-                  <div
-                    className="flex items-center justify-between gap-2 rounded-lg border bg-background p-2 pe-3"
-                    key={file.id}
-                  >
-                    <div className="flex items-center gap-3 overflow-hidden">
-                      <div className="flex aspect-square size-10 shrink-0 items-center justify-center rounded border">
-                        {getFileIcon(file)}
-                      </div>
-                      <div className="flex min-w-0 flex-col gap-0.5">
-                        <p className="truncate text-[13px] font-medium">
-                          {file.file instanceof File ? file.file.name : file.file.name}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatBytes(file.file instanceof File ? file.file.size : file.file.size)}
-                        </p>
-                      </div>
-                    </div>
+      {selectedBank && (
+        <div className="space-y-6">
+          <div
+            className="flex flex-col items-center rounded-xl border border-dashed border-input p-4 transition-colors has-[input:focus]:border-ring has-[input:focus]:ring-[3px] has-[input:focus]:ring-ring/50 data-[dragging=true]:bg-accent/50"
+            data-dragging={isDragging || undefined}
+            data-files={files.length > 0 || undefined}
+            onDragEnter={handleDragEnter}
+            onDragLeave={handleDragLeave}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+          >
+            <input {...getInputProps()} aria-label="Upload files" className="sr-only" />
 
-                    <Button
-                      aria-label="Remove file"
-                      className="-me-2 size-8 text-muted-foreground/80 hover:bg-transparent hover:text-foreground"
-                      onClick={() => removeFile(file.id)}
-                      size="icon"
-                      variant="ghost"
-                    >
-                      <IconX aria-hidden="true" className="size-4" />
-                    </Button>
-                  </div>
-                ))}
-
-                {canAddMore && (
-                  <Button
-                    className="mt-2 w-full"
-                    onClick={openFileDialog}
-                    size="sm"
-                    variant="outline"
-                  >
-                    <IconUpload aria-hidden="true" className="-ms-1 opacity-60" />
-                    Add more
+            {hasFiles ? (
+              <div className="flex w-full flex-col gap-3">
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="truncate text-sm font-medium">Uploaded Files ({fileCount})</h3>
+                  <Button onClick={clearFiles} variant="outline">
+                    <IconTrash aria-hidden="true" className="-ms-0.5 size-3.5 opacity-60" />
+                    Remove all
                   </Button>
-                )}
+                </div>
+                <div className="w-full space-y-2">
+                  {files.map(file => (
+                    <div
+                      className="flex items-center justify-between gap-2 rounded-lg border bg-background p-2 pe-3"
+                      key={file.id}
+                    >
+                      <div className="flex items-center gap-3 overflow-hidden">
+                        <div className="flex aspect-square size-10 shrink-0 items-center justify-center rounded border">
+                          {getFileIcon(file)}
+                        </div>
+                        <div className="flex min-w-0 flex-col gap-0.5">
+                          <p className="truncate text-[13px] font-medium">
+                            {file.file instanceof File ? file.file.name : file.file.name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatBytes(
+                              file.file instanceof File ? file.file.size : file.file.size,
+                            )}
+                          </p>
+                        </div>
+                      </div>
+
+                      <Button
+                        aria-label="Remove file"
+                        className="-me-2 size-8 text-muted-foreground/80 hover:bg-transparent hover:text-foreground"
+                        onClick={() => removeFile(file.id)}
+                        size="icon"
+                        variant="ghost"
+                      >
+                        <IconX aria-hidden="true" className="size-4" />
+                      </Button>
+                    </div>
+                  ))}
+
+                  {canAddMore && (
+                    <Button className="mt-2 w-full" onClick={openFileDialog} variant="outline">
+                      <IconUpload aria-hidden="true" className="-ms-1 opacity-60" />
+                      Add more
+                    </Button>
+                  )}
+                </div>
               </div>
-            </div>
-          ) : (
-            <Empty className="p-3 md:p-6">
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <IconFileDescription />
-                </EmptyMedia>
-                <EmptyTitle>Statement Analyzer</EmptyTitle>
-                <EmptyDescription>
-                  Upload your bank statement to extract interest transactions.
-                </EmptyDescription>
-              </EmptyHeader>
-              <EmptyContent>
-                <Button onClick={openFileDialog} size="sm" variant="outline">
-                  <IconUpload aria-hidden="true" />
-                  Select Files
-                </Button>
-              </EmptyContent>
-            </Empty>
-          )}
-        </div>
-
-        {uploadErrors.length > 0 && (
-          <div className="flex items-center gap-1 text-xs text-destructive" role="alert">
-            <IconAlertCircle className="size-3 shrink-0" />
-            <span>{uploadErrors[0]}</span>
+            ) : (
+              <Empty className="p-3 md:p-6">
+                <EmptyHeader>
+                  <EmptyMedia variant="icon">
+                    <IconFileDescription />
+                  </EmptyMedia>
+                  <EmptyTitle>Upload Statement</EmptyTitle>
+                  <EmptyDescription>
+                    Upload your {selectedBank.name} statement (
+                    {selectedBank.formats.map(f => f.toUpperCase()).join(", ")}).
+                  </EmptyDescription>
+                  {lastTransactionDates[selectedBank.id] && (
+                    <EmptyDescription>
+                      {" "}
+                      Last upload:{" "}
+                      <span className="font-semibold">
+                        {new Intl.DateTimeFormat("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        }).format(new Date(lastTransactionDates[selectedBank.id]!))}
+                      </span>
+                    </EmptyDescription>
+                  )}
+                </EmptyHeader>
+                <EmptyContent>
+                  <Button onClick={openFileDialog} variant="outline">
+                    <IconUpload aria-hidden="true" />
+                    Select Files
+                  </Button>
+                </EmptyContent>
+              </Empty>
+            )}
           </div>
-        )}
-      </div>
 
-      <div className="flex justify-end">
-        <Button
-          className="w-auto"
-          disabled={!hasFiles || isProcessing}
-          onClick={handleProcessFiles}
-        >
-          {isProcessing && <Spinner className="animate-spin" />}
-          Analyze Statements
-        </Button>
-      </div>
+          {errors.length > 0 && (
+            <div
+              className="flex flex-col gap-1.5 rounded-md bg-destructive/10 p-3 text-sm text-destructive"
+              role="alert"
+            >
+              {errors.map((error, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <IconAlertCircle className="size-4 shrink-0" />
+                  <span>{error}</span>
+                </div>
+              ))}
+            </div>
+          )}
 
-      {processError && (
-        <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-          <span className="font-bold">Error:</span> {processError}
+          <div className="flex justify-end">
+            <Button
+              className="w-auto"
+              disabled={!hasFiles || isProcessing}
+              onClick={handleProcessFiles}
+            >
+              {isProcessing && <Spinner className="animate-spin" />}
+              Analyze Statements
+            </Button>
+          </div>
         </div>
       )}
 
@@ -283,7 +337,7 @@ export function StatementAnalyzer() {
           </ResponsiveDialogHeader>
           <InterestTable transactions={transactions} />
           <ResponsiveDialogFooter>
-            <Button disabled={isPending} onClick={handleTransactionSync} size="sm" type="submit">
+            <Button disabled={isPending} onClick={handleTransactionSync} type="submit">
               <IconRefresh className={isPending ? "animate-spin direction-reverse" : ""} />
               Sync
             </Button>
