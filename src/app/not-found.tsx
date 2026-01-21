@@ -21,11 +21,16 @@ function NotFound() {
         <EmptyDescription>The page you&apos;re looking for doesn&apos;t exist.</EmptyDescription>
       </EmptyHeader>
       <EmptyContent>
-        <Button asChild size="sm" variant="outline">
-          <Link href="/" replace>
-            Go to Home
-          </Link>
-        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          render={
+            <Link href="/" replace>
+              Go to Home
+            </Link>
+          }
+          nativeButton={false}
+        />
       </EmptyContent>
     </Empty>
   )
