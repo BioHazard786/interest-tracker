@@ -1,9 +1,33 @@
-import type { BankParser, Transaction } from "@/lib/banking/types"
+import type { BankParser, DescriptionFormatter, Transaction } from "@/lib/banking/types"
 import { generateHash, parseDDMMYYYY } from "@/lib/utils"
 import Papa from "papaparse"
 
 const LINE_REGEX = /\r\n|\n/
 const INTEREST_REGEX = /int\.pd|interest/i
+const INTEREST_RANGE_REGEX =
+  /int\.\s*\.?pd[:\s]*([0-9]{2}-[0-9]{2}-[0-9]{4})\s*(?:to|-)\s*([0-9]{2}-[0-9]{2}-[0-9]{4})/i
+
+const humanDateFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+})
+
+export const formatPNBDescription: DescriptionFormatter = (description: string | null) => {
+  if (!description) return description
+  const rangeMatch = description.match(INTEREST_RANGE_REGEX)
+  if (rangeMatch) {
+    const [, fromRaw, toRaw] = rangeMatch
+    const fromDate = parseDDMMYYYY(fromRaw)
+    const toDate = parseDDMMYYYY(toRaw)
+
+    if (!Number.isNaN(fromDate.getTime()) && !Number.isNaN(toDate.getTime())) {
+      return `Interest received from the bank from ${humanDateFormatter.format(fromDate)} to ${humanDateFormatter.format(toDate)}`
+    }
+  }
+
+  return description
+}
 
 export const PNBParser: BankParser = {
   id: "in-pnb",
@@ -47,11 +71,13 @@ export const PNBParser: BankParser = {
       const hashData = `${txnDateStr}|${description}|${amount}|${balance}|${userID || ""}|${transactionId || ""}`
       const transactionHash = await generateHash(hashData)
 
+      const humanDescription = formatPNBDescription(description)
+
       transactions.push({
         transactionId,
         transactionHash,
         date: txnDate,
-        description,
+        description: humanDescription,
         amount,
         type: amount >= 0 ? "credit" : "debit",
         balance,

@@ -37,3 +37,20 @@ export async function generateHash(data: string): Promise<string> {
   const hashArray = Array.from(new Uint8Array(hashBuffer))
   return hashArray.map(b => b.toString(16).padStart(2, "0")).join("")
 }
+
+export function formatCurrency(amount: number, currency: string = "INR"): string {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount)
+}
+
+export function formatDate(date: Date): string {
+  return new Intl.DateTimeFormat("en-IN", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+  }).format(date)
+}

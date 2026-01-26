@@ -1,4 +1,5 @@
-import type { BankInfo, BankParser, FileFormat } from "./types"
+import { formatPNBDescription } from "./parsers/pnb"
+import type { BankInfo, BankParser, DescriptionFormatter, FileFormat } from "./types"
 
 export const banks: BankInfo[] = [
   {
@@ -6,6 +7,7 @@ export const banks: BankInfo[] = [
     name: "Punjab National Bank",
     formats: ["csv"],
     load: () => import("./parsers/pnb").then(m => m.PNBParser),
+    descriptionFormatter: formatPNBDescription,
   },
   {
     id: "in-kotak",
@@ -38,6 +40,12 @@ export async function loadParser(bankId: string): Promise<BankParser> {
   }
   const parser = await bank.load()
   return "default" in parser ? parser.default : parser
+}
+
+export function getDescriptionFormatter(bankId: string): DescriptionFormatter {
+  const bank = getBankById(bankId)
+  if (bank?.descriptionFormatter) return bank.descriptionFormatter
+  return (description: string | null) => description
 }
 
 export function getAcceptedFileTypes(formats: FileFormat[]): string {
