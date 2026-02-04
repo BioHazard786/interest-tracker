@@ -15,9 +15,11 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   Sheet,
@@ -35,7 +37,6 @@ import {
   IconArrowDown,
   IconArrowUp,
   IconArrowsSort,
-  IconCheck,
   IconChevronDown,
   IconCircleCheckFilled,
   IconCircleXFilled,
@@ -226,7 +227,7 @@ const STATUS_OPTIONS = [
   { value: "fully_donated", label: "Donated" },
 ] as const
 
-function StatusFilterPopover({
+function StatusFilterDropdown({
   statusFilter,
   onStatusFilterChange,
 }: {
@@ -250,8 +251,8 @@ function StatusFilterPopover({
   const hasActiveFilter = statusFilter && statusFilter.length > 0
 
   return (
-    <Popover>
-      <PopoverTrigger
+    <DropdownMenu>
+      <DropdownMenuTrigger
         render={
           <Button variant="ghost">
             Status
@@ -269,42 +270,28 @@ function StatusFilterPopover({
           </Button>
         }
       />
-      <PopoverContent className="w-48 p-1" align="start">
-        <div className="flex flex-col">
+      <DropdownMenuContent className="w-48" align="start">
+        <DropdownMenuGroup>
           {STATUS_OPTIONS.map(option => (
-            <Button
+            <DropdownMenuCheckboxItem
               key={option.value}
-              variant="ghost"
-              className="justify-start gap-2 font-normal"
-              onClick={() => toggleStatus(option.value)}
+              onCheckedChange={() => toggleStatus(option.value)}
+              checked={isSelected(option.value)}
             >
-              <span
-                className={`flex size-4 items-center justify-center rounded border ${
-                  isSelected(option.value)
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-muted-foreground/30"
-                }`}
-              >
-                {isSelected(option.value) && <IconCheck className="size-3" />}
-              </span>
               {option.label}
-            </Button>
+            </DropdownMenuCheckboxItem>
           ))}
-          {hasActiveFilter && (
-            <>
-              <div className="my-1 h-px bg-border" />
-              <Button
-                variant="ghost"
-                className="justify-start font-normal text-muted-foreground"
-                onClick={() => onStatusFilterChange(undefined)}
-              >
-                Clear filter
-              </Button>
-            </>
-          )}
-        </div>
-      </PopoverContent>
-    </Popover>
+        </DropdownMenuGroup>
+        {hasActiveFilter && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => onStatusFilterChange(undefined)} variant="destructive">
+              Clear filter
+            </DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 
@@ -349,7 +336,7 @@ function InterestTransactionTable() {
           return {
             ...col,
             header: () => (
-              <StatusFilterPopover
+              <StatusFilterDropdown
                 statusFilter={statusFilter}
                 onStatusFilterChange={setStatusFilter}
               />
