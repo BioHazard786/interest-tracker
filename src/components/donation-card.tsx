@@ -17,8 +17,10 @@ import {
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from "@/components/ui/responsive-dialog"
-import { addDonation } from "@/server/action"
+import { apiFetch } from "@/lib/api"
 import { IconMoodSmileBeam } from "@tabler/icons-react"
+import { useQueryClient } from "@tanstack/react-query"
+import { useRouter } from "next/navigation"
 import { useRef, useState, useTransition } from "react"
 import { toast } from "sonner"
 import { Spinner } from "./ui/spinner"
@@ -35,6 +37,8 @@ export function DonationCard({
   const [open, setOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const router = useRouter()
+  const queryClient = useQueryClient()
 
   const handleDonate = () => {
     const value = parseFloat(inputRef.current?.value || "")
@@ -53,13 +57,15 @@ export function DonationCard({
     }
 
     startTransition(async () => {
-      const result = await addDonation(value)
-      if (result.success) {
+      try {
+        await apiFetch("/donations", { method: "POST", body: JSON.stringify({ amount: value }) })
         toast.success("Donation added successfully")
         setOpen(false)
         inputRef.current!.value = ""
-      } else {
-        toast.error(result.message)
+        queryClient.invalidateQueries({ queryKey: ["interest-transaction"] })
+        router.refresh()
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Failed to add donation")
       }
     })
   }

@@ -1,3 +1,4 @@
+import { Providers } from "@/components/providers"
 import { Toaster } from "@/components/ui/sonner"
 import type { Metadata } from "next"
 import { Geist_Mono, Inter } from "next/font/google"
@@ -26,8 +27,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} ${geistMono.variable} dark font-sans antialiased`}>
-        {children}
-        <Toaster position="top-center" />
+        <Providers>{children}</Providers>
+        <Toaster />
       </body>
     </html>
   )

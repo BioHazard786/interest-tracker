@@ -32,7 +32,7 @@ import { type InterestProjection } from "@/db/schema"
 import { getBankById, getDescriptionFormatter } from "@/lib/banking/registry"
 import { interestTransactionOptions } from "@/lib/interest-transaction-options"
 import { cn, formatCurrency, formatDate } from "@/lib/utils"
-import { type StatusFilter } from "@/server/projection-action"
+import type { StatusFilter } from "@/server/core/projection"
 import {
   IconArrowDown,
   IconArrowUp,

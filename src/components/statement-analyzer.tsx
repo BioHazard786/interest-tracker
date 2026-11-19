@@ -29,7 +29,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { formatBytes, useFileUpload } from "@/hooks/use-file-upload"
 import { banks, getAcceptedFileTypes, loadParser } from "@/lib/banking/registry"
 import type { BankInfo, Transaction } from "@/lib/banking/types"
-import { syncTransactionsToDb } from "@/server/action"
+import { apiFetch } from "@/lib/api"
 import {
   IconAlertCircle,
   IconFileDescription,
@@ -41,6 +41,8 @@ import {
   IconUpload,
   IconX,
 } from "@tabler/icons-react"
+import { useQueryClient } from "@tanstack/react-query"
+import { useRouter } from "next/navigation"
 import { useCallback, useMemo, useState, useTransition } from "react"
 import { toast } from "sonner"
 import { InterestTable } from "./interest-table"
@@ -57,6 +59,8 @@ export function StatementAnalyzer({ userID, lastTransactionDates }: StatementAna
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [processError, setProcessError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const router = useRouter()
+  const queryClient = useQueryClient()
 
   const maxFiles = 10
   const acceptedFileTypes = useMemo(
@@ -154,19 +158,23 @@ export function StatementAnalyzer({ userID, lastTransactionDates }: StatementAna
     if (!selectedBank) return
 
     startTransition(async () => {
-      console.log(transactions)
-      const { success, message } = await syncTransactionsToDb(selectedBank.id, transactions)
-      if (success) {
+      try {
+        const { message } = await apiFetch<{ message: string }>("/transactions/sync", {
+          method: "POST",
+          body: JSON.stringify({ bankId: selectedBank.id, transactions }),
+        })
         clearFiles()
         setTransactions([])
         setSelectedBank(null)
         toast.success(message)
-      } else {
-        toast.error(message)
+        queryClient.invalidateQueries({ queryKey: ["interest-transaction"] })
+        router.refresh()
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Failed to sync transactions")
       }
       setIsDialogOpen(false)
     })
-  }, [transactions, clearFiles, selectedBank])
+  }, [transactions, clearFiles, selectedBank, queryClient, router])
 
   return (
     <div className="mx-auto w-full max-w-xl space-y-6">

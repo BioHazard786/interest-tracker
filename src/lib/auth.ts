@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
+import { bearer } from "better-auth/plugins";
 import { authSchema } from "@/db/auth-schema";
 import { db } from "@/db/drizzle";
 
@@ -27,5 +28,6 @@ export const auth = betterAuth({
       maxAge: 60 * 60 * 24 * 365, // 365 days
     },
   },
-  plugins: [nextCookies()],
+  // bearer(): lets the Android app send `Authorization: Bearer <session token>` instead of cookies.
+  plugins: [bearer(), nextCookies()],
 });

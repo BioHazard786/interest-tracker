@@ -3,14 +3,14 @@ import { StatementAnalyzer } from "@/components/statement-analyzer"
 import { StatsCard } from "@/components/stats-card"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { getDashboardStats, getLastTransactionDateByBank } from "@/server/action"
+import { getDashboardStats, getLastTransactionDateByBank } from "@/server/core/stats"
 import { IconMoodSadDizzy, IconMoodSick } from "@tabler/icons-react"
 import Link from "next/link"
 
 export async function Dashboard({ userID }: { userID: string }) {
   const [{ totalInterest, totalDonated }, lastTransactionDates] = await Promise.all([
-    getDashboardStats(),
-    getLastTransactionDateByBank(),
+    getDashboardStats(userID),
+    getLastTransactionDateByBank(userID),
   ])
   const amountLeft = totalInterest - totalDonated
 
