@@ -1,0 +1,102 @@
+name: Android release
+
+# Push a tag like v1.2.3 (or v1.2.3-beta.1 for a pre-release) to build, sign and publish the APK.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write # creates the GitHub release
+
+concurrency:
+  group: android-release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: android
+    env:
+      # Secrets: android/keystore.properties + the keystore. Variables: android/local.properties.
+      KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      API_BASE_URL: ${{ vars.API_BASE_URL }}
+      GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Work out the version from the tag
+        id: version
+        working-directory: .
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          core="${tag%%[-+]*}"
+          if ! [[ "$tag" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+            echo "::error::Tag '$GITHUB_REF_NAME' is not vMAJOR.MINOR.PATCH (optionally with a -suffix)"
+            exit 1
+          fi
+          IFS=. read -r major minor patch <<<"$core"
+          # 1.2.3 -> 10203; minor and patch must stay below 100 so the code keeps increasing.
+          echo "name=$tag" >> "$GITHUB_OUTPUT"
+          echo "code=$((major * 10000 + minor * 100 + patch))" >> "$GITHUB_OUTPUT"
+          case "$tag" in *-*) echo "prerelease=true" >> "$GITHUB_OUTPUT" ;; *) echo "prerelease=false" >> "$GITHUB_OUTPUT" ;; esac
+
+      - name: Check the signing secrets exist
+        run: |
+          missing=0
+          for name in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD API_BASE_URL GOOGLE_WEB_CLIENT_ID; do
+            if [ -z "${!name}" ]; then echo "::error::$name is not set (repo secret/variable, see android/README.md)"; missing=1; fi
+          done
+          exit $missing
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Write the keystore and build config
+        run: |
+          mkdir -p keystore
+          echo "$KEYSTORE_BASE64" | base64 -d > keystore/release-key.jks
+          {
+            echo "storeFile=../keystore/release-key.jks"
+            echo "storePassword=$KEYSTORE_PASSWORD"
+            echo "keyAlias=$KEY_ALIAS"
+            echo "keyPassword=$KEY_PASSWORD"
+          } > keystore.properties
+          {
+            echo "API_BASE_URL=$API_BASE_URL"
+            echo "GOOGLE_WEB_CLIENT_ID=$GOOGLE_WEB_CLIENT_ID"
+          } > local.properties
+
+      - name: Build the signed release APK
+        run: >
+          ./gradlew :app:assembleRelease --no-daemon
+          -PversionName=${{ steps.version.outputs.name }}
+          -PversionCode=${{ steps.version.outputs.code }}
+
+      - name: Verify the APK is signed with the release key
+        run: |
+          apk=app/build/outputs/apk/release/app-release.apk
+          apksigner="$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -n1)"
+          "$apksigner" verify --print-certs "$apk"
+          name="interest-tracker-${GITHUB_REF_NAME}.apk"
+          mkdir -p ../dist
+          cp "$apk" "../dist/$name"
+          (cd ../dist && sha256sum "$name" > "$name.sha256")
+
+      - name: Publish the GitHub release
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          flags=(--generate-notes --verify-tag)
+          [ "${{ steps.version.outputs.prerelease }}" = "true" ] && flags+=(--prerelease)
+          gh release create "$GITHUB_REF_NAME" dist/* "${flags[@]}"
