@@ -132,7 +132,8 @@ const INTEREST_REGEX = /MONTHLY SAVINGS INTEREST CREDIT/i
 //   ### 49.00 41,918.20
 const DATE_LINE_REGEX =
   /^\s*(\d{2}-\w{3}-\d{4})\s+\d{2}-\w{3}-\d{4}\s+(MONTHLY SAVINGS INTEREST CREDIT)\s*$/i
-const AMOUNT_LINE_REGEX = /^###\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s*$/
+// pdf2md picks the heading level from the PDF's font sizes, so any level (or none) can come out
+const AMOUNT_LINE_REGEX = /^(?:#{1,6}\s+)?([\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s*$/
 
 async function parsePdf(file: File, userID: string | null): Promise<Transaction[]> {
   const pdfBuffer = await file.arrayBuffer()

@@ -12,7 +12,7 @@ export const banks: BankInfo[] = [
   {
     id: "in-kotak",
     name: "Kotak Mahindra Bank",
-    formats: ["pdf"],
+    formats: ["pdf", "csv"],
     load: () => import("./parsers/kotak").then(m => m.KotakParser),
   },
   {
