@@ -44,8 +44,26 @@ enum class DonationStatus(val apiValue: String, val label: String) {
 
 @Serializable internal data class ApiMessage(val success: Boolean = true, val message: String = "")
 
-@Serializable internal data class IdTokenBody(val token: String)
+@Serializable internal data class IdTokenBody(val token: String, val nonce: String)
 
 @Serializable internal data class SocialSignInBody(val provider: String, val idToken: IdTokenBody)
 
 @Serializable internal data class SignInResponse(val token: String? = null)
+
+@Serializable internal data class SessionUser(val id: String)
+
+@Serializable internal data class SessionResponse(val user: SessionUser? = null)
+
+@Serializable
+internal data class SyncTxn(
+  val transactionHash: String,
+  val amount: Double,
+  val balance: Double,
+  /** "YYYY-MM-DD": the date printed on the statement. */
+  val date: String,
+  val type: String,
+  val description: String,
+  val transactionId: String? = null,
+)
+
+@Serializable internal data class SyncBody(val bankId: String, val transactions: List<SyncTxn>)

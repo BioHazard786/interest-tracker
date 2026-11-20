@@ -1,0 +1,5 @@
+Kotak Mahindra Bank - Statement
+# Date Narration Amount Balance
+130 28 Feb 2025 UPI-TEST PAYEE-ref 500.00 2,692.39
+131 31 Mar 2025 Int.Pd:1234567890:01-01-2025 to 31-03-2025 12.00 2,704.39
+132 30 Jun 2025 Int.Pd:1234567890:01-04-2025 to 30-06-2025 1,012.34 3,716.73

@@ -1,0 +1,425 @@
+{
+  "timezone": "Asia/Kolkata",
+  "cases": [
+    {
+      "file": "pnb.csv",
+      "bankId": "in-pnb",
+      "userId": "test-user-0001",
+      "transactions": [
+        {
+          "hashInput": "31-03-2025|1234567890123456:Int.Pd:01-01-2025 to 31-03-2025|812.5|1|test-user-0001|101",
+          "hash": "9765b48ed485e5f06bad7e597aea7cf953562d24b87f5018167e89f806a78f82",
+          "transactionId": "101",
+          "date": "2025-03-30T18:30:00.000Z",
+          "description": "Interest received from the bank from Jan 1, 2025 to Mar 31, 2025",
+          "amount": 812.5,
+          "type": "credit",
+          "balance": 1
+        },
+        {
+          "hashInput": "30-06-2025|1234567890123456:Int.Pd:01-04-2025 to 30-06-2025|0.1|1734.6|test-user-0001|103",
+          "hash": "c1e6c33c77da60265ebf28ab12ddb88009c6ed5edc745b5f378e17ef781841f2",
+          "transactionId": "103",
+          "date": "2025-06-29T18:30:00.000Z",
+          "description": "Interest received from the bank from Apr 1, 2025 to Jun 30, 2025",
+          "amount": 0.1,
+          "type": "credit",
+          "balance": 1734.6
+        },
+        {
+          "hashInput": "01-07-2025|Interest recovery adjustment|-5.25|1729.35|test-user-0001|104",
+          "hash": "5e38009027fc8de09ca2d989837d065ade35a583683ca332501ca784f09f1d95",
+          "transactionId": "104",
+          "date": "2025-06-30T18:30:00.000Z",
+          "description": "Interest recovery adjustment",
+          "amount": -5.25,
+          "type": "debit",
+          "balance": 1729.35
+        }
+      ]
+    },
+    {
+      "file": "sbi.xlsx",
+      "bankId": "in-sbi",
+      "userId": "test-user-0001",
+      "transactions": [
+        {
+          "hashInput": "2025-03-31T00:00:00.000Z|CREDIT INTERES\nT CREDIT-SBINT|1234.5|22345.75|test-user-0001",
+          "hash": "d6184af0012509b14f9f9e4babf8083fc29f1622ea18a1513e6aa9f1a1b103ee",
+          "transactionId": null,
+          "date": "2025-03-31T00:00:00.000Z",
+          "description": "CREDIT INTERES\nT CREDIT-SBINT",
+          "amount": 1234.5,
+          "type": "credit",
+          "balance": 22345.75
+        },
+        {
+          "hashInput": "2025-06-29T18:30:00.000Z|INTERES T CREDIT SBINT|1100.25|23446|test-user-0001",
+          "hash": "72f03d51a1faf539410fc5f7717e38ca2ba6ec3af49cc2d6f39dfc9a8f623215",
+          "transactionId": null,
+          "date": "2025-06-29T18:30:00.000Z",
+          "description": "INTERES T CREDIT SBINT",
+          "amount": 1100.25,
+          "type": "credit",
+          "balance": 23446
+        },
+        {
+          "hashInput": "2025-09-29T18:30:00.000Z|BY CREDIT INTERES T CREDIT|99|23295|test-user-0001",
+          "hash": "79e68bd509c82cbd75523042fbf54c0cb6cbb0c1fa75a7b2ca69344cca3c0382",
+          "transactionId": null,
+          "date": "2025-09-29T18:30:00.000Z",
+          "description": "BY CREDIT INTERES T CREDIT",
+          "amount": 99,
+          "type": "credit",
+          "balance": 23295
+        }
+      ]
+    },
+    {
+      "file": "idfc.xlsx",
+      "bankId": "in-idfc",
+      "userId": "test-user-0001",
+      "transactions": [
+        {
+          "hashInput": "2025-08-31T00:00:00.000Z|MONTHLY SAVINGS INTEREST CREDIT|49|41918.2|test-user-0001",
+          "hash": "f748816cfaec67b1468d2bbcbe826de8fab776115d76aa1afb15c44b0d3d4fe2",
+          "transactionId": null,
+          "date": "2025-08-31T00:00:00.000Z",
+          "description": "MONTHLY SAVINGS INTEREST CREDIT",
+          "amount": 49,
+          "type": "credit",
+          "balance": 41918.2
+        },
+        {
+          "hashInput": "2025-09-29T18:30:00.000Z|Monthly Savings Interest Credit|51.5|41969.7|test-user-0001",
+          "hash": "196ce1cd39bd82fa09488cb2fed823b23a90504ffcea272ecaa4a1a8cb20b6c7",
+          "transactionId": null,
+          "date": "2025-09-29T18:30:00.000Z",
+          "description": "Monthly Savings Interest Credit",
+          "amount": 51.5,
+          "type": "credit",
+          "balance": 41969.7
+        }
+      ]
+    },
+    {
+      "file": "idfc.pdf",
+      "bankId": "in-idfc",
+      "userId": "test-user-0001",
+      "transactions": [
+        {
+          "hashInput": "2025-08-30T18:30:00.000Z|MONTHLY SAVINGS INTEREST CREDIT|49|41918.2|test-user-0001",
+          "hash": "5cd858518081961a64b0583b40e2f071d78b79c779f748fb0b4d390d73844558",
+          "transactionId": null,
+          "date": "2025-08-30T18:30:00.000Z",
+          "description": "MONTHLY SAVINGS INTEREST CREDIT",
+          "amount": 49,
+          "type": "credit",
+          "balance": 41918.2
+        },
+        {
+          "hashInput": "2025-09-29T18:30:00.000Z|MONTHLY SAVINGS INTEREST CREDIT|51.5|41969.7|test-user-0001",
+          "hash": "cea448c0617b31a08b7a98f10f1db480e52b393d0cad4432335cdd993889613e",
+          "transactionId": null,
+          "date": "2025-09-29T18:30:00.000Z",
+          "description": "MONTHLY SAVINGS INTEREST CREDIT",
+          "amount": 51.5,
+          "type": "credit",
+          "balance": 41969.7
+        },
+        {
+          "hashInput": "2025-12-30T18:30:00.000Z|MONTHLY SAVINGS INTEREST CREDIT|1051.5|42969.7|test-user-0001",
+          "hash": "b4d50a34d7ed68485852c880f65dad5baec88982d4afe637830286462cf4f146",
+          "transactionId": null,
+          "date": "2025-12-30T18:30:00.000Z",
+          "description": "MONTHLY SAVINGS INTEREST CREDIT",
+          "amount": 1051.5,
+          "type": "credit",
+          "balance": 42969.7
+        }
+      ]
+    },
+    {
+      "file": "kotak.pdf",
+      "bankId": "in-kotak",
+      "userId": "test-user-0001",
+      "transactions": [
+        {
+          "hashInput": "31 Mar 2025|Int.Pd:1234567890:01-01-2025 to 31-03-2025|12|2704.39|test-user-0001",
+          "hash": "2da7efeb79c7c6236bd88dad9e1982eedc6f0893ed45c39fe2828f5ce4ea7724",
+          "transactionId": null,
+          "date": "2025-03-30T18:30:00.000Z",
+          "description": "Int.Pd:1234567890:01-01-2025 to 31-03-2025",
+          "amount": 12,
+          "type": "credit",
+          "balance": 2704.39
+        },
+        {
+          "hashInput": "30 Jun 2025|Int.Pd:1234567890:01-04-2025 to 30-06-2025|1012.34|3716.73|test-user-0001",
+          "hash": "1d8ce8ec7cc8c8d17e67d251a3da9191919e80118e899491023b06966fdf0b33",
+          "transactionId": null,
+          "date": "2025-06-29T18:30:00.000Z",
+          "description": "Int.Pd:1234567890:01-04-2025 to 30-06-2025",
+          "amount": 1012.34,
+          "type": "credit",
+          "balance": 3716.73
+        },
+        {
+          "hashInput": "5 Jul 2025|Int.Pd:1234567890|7|3723.73|test-user-0001",
+          "hash": "336fcedfbe1898fa5f84e9c72fbf08b549910c6e7cd341331dce346aa3f0606d",
+          "transactionId": null,
+          "date": "2025-07-04T18:30:00.000Z",
+          "description": "Int.Pd:1234567890",
+          "amount": 7,
+          "type": "credit",
+          "balance": 3723.73
+        }
+      ]
+    },
+    {
+      "file": "real-pnb.csv",
+      "bankId": "in-pnb",
+      "userId": "test-user-0001",
+      "transactions": [
+        {
+          "hashInput": "27/09/2026|6267631912518702:Int.Pd:01-09-2026 to 25-09-2026|6|52.54|test-user-0001|B15280398",
+          "hash": "db47d4f9c024e712f9f4064a876cca4e9088ead89a1676ca50a97660d208071e",
+          "transactionId": "B15280398",
+          "date": "2026-09-26T18:30:00.000Z",
+          "description": "Interest received from the bank from Sep 1, 2026 to Sep 25, 2026",
+          "amount": 6,
+          "type": "credit",
+          "balance": 52.54
+        },
+        {
+          "hashInput": "05/09/2026|6267631912518702:Int.Pd:01-06-2026 to 31-08-2026|18|1413.62|test-user-0001|E70239822",
+          "hash": "da8967749e94d48fc3d0ffb92c8e27ca2027d1c4f738d9a4f94a5d2ef43e1762",
+          "transactionId": "E70239822",
+          "date": "2026-09-04T18:30:00.000Z",
+          "description": "Interest received from the bank from Jun 1, 2026 to Aug 31, 2026",
+          "amount": 18,
+          "type": "credit",
+          "balance": 1413.62
+        },
+        {
+          "hashInput": "03/06/2026|6267631912518702:Int.Pd:01-03-2026 to 31-05-2026|132|653.58|test-user-0001|T54636965",
+          "hash": "c445a6612631cd3c61641ba433b6a39745aba2388108e98eedde5d0dc3a82373",
+          "transactionId": "T54636965",
+          "date": "2026-06-02T18:30:00.000Z",
+          "description": "Interest received from the bank from Mar 1, 2026 to May 31, 2026",
+          "amount": 132,
+          "type": "credit",
+          "balance": 653.58
+        }
+      ]
+    },
+    {
+      "file": "real-kotak.csv",
+      "bankId": "in-kotak",
+      "userId": "test-user-0001",
+      "transactions": [
+        {
+          "hashInput": "31 Mar 2025|Int.Pd:6368278367:01-01-2025 to 31-03-2025|17|2988.2|test-user-0001",
+          "hash": "304bf49de47f293ad31124aa6810e16b9f601e5217015214cb5d36f89ac6a723",
+          "transactionId": null,
+          "date": "2025-03-30T18:30:00.000Z",
+          "description": "Int.Pd:6368278367:01-01-2025 to 31-03-2025",
+          "amount": 17,
+          "type": "credit",
+          "balance": 2988.2
+        },
+        {
+          "hashInput": "30 Jun 2025|Int.Pd:6368278367:01-04-2025 to 30-06-2025|12|624.19|test-user-0001",
+          "hash": "819e996ba616328dd90855d38f9da5076989a478df7ce1273c131b59f939d4a3",
+          "transactionId": null,
+          "date": "2025-06-29T18:30:00.000Z",
+          "description": "Int.Pd:6368278367:01-04-2025 to 30-06-2025",
+          "amount": 12,
+          "type": "credit",
+          "balance": 624.19
+        },
+        {
+          "hashInput": "30 Sep 2025|Int.Pd:6368278367:01-07-2025 to 30-09-2025|24|257.91|test-user-0001",
+          "hash": "18413893c1b868f711859d4bbfb9c005ae901a2c5eb1001336acd622369c6711",
+          "transactionId": null,
+          "date": "2025-09-29T18:30:00.000Z",
+          "description": "Int.Pd:6368278367:01-07-2025 to 30-09-2025",
+          "amount": 24,
+          "type": "credit",
+          "balance": 257.91
+        },
+        {
+          "hashInput": "31 Dec 2025|Int.Pd:6368278367:01-10-2025 to 31-12-2025|11|390.27|test-user-0001",
+          "hash": "aeab6224589249219e277982f6cf8b1c40e1f43019a1f67f2b59e458cba71e7f",
+          "transactionId": null,
+          "date": "2025-12-30T18:30:00.000Z",
+          "description": "Int.Pd:6368278367:01-10-2025 to 31-12-2025",
+          "amount": 11,
+          "type": "credit",
+          "balance": 390.27
+        }
+      ]
+    },
+    {
+      "file": "real-kotak.pdf",
+      "bankId": "in-kotak",
+      "userId": "test-user-0001",
+      "transactions": [
+        {
+          "hashInput": "31 Mar 2025|Int.Pd:6368278367:01-01-2025 to 31-03-2025|17|2988.2|test-user-0001",
+          "hash": "304bf49de47f293ad31124aa6810e16b9f601e5217015214cb5d36f89ac6a723",
+          "transactionId": null,
+          "date": "2025-03-30T18:30:00.000Z",
+          "description": "Int.Pd:6368278367:01-01-2025 to 31-03-2025",
+          "amount": 17,
+          "type": "credit",
+          "balance": 2988.2
+        },
+        {
+          "hashInput": "30 Jun 2025|Int.Pd:6368278367:01-04-2025 to 30-06-2025|12|624.19|test-user-0001",
+          "hash": "819e996ba616328dd90855d38f9da5076989a478df7ce1273c131b59f939d4a3",
+          "transactionId": null,
+          "date": "2025-06-29T18:30:00.000Z",
+          "description": "Int.Pd:6368278367:01-04-2025 to 30-06-2025",
+          "amount": 12,
+          "type": "credit",
+          "balance": 624.19
+        },
+        {
+          "hashInput": "30 Sep 2025|Int.Pd:6368278367:01-07-2025 to 30-09-2025|24|257.91|test-user-0001",
+          "hash": "18413893c1b868f711859d4bbfb9c005ae901a2c5eb1001336acd622369c6711",
+          "transactionId": null,
+          "date": "2025-09-29T18:30:00.000Z",
+          "description": "Int.Pd:6368278367:01-07-2025 to 30-09-2025",
+          "amount": 24,
+          "type": "credit",
+          "balance": 257.91
+        },
+        {
+          "hashInput": "31 Dec 2025|Int.Pd:6368278367:01-10-2025 to 31-12-2025|11|390.27|test-user-0001",
+          "hash": "aeab6224589249219e277982f6cf8b1c40e1f43019a1f67f2b59e458cba71e7f",
+          "transactionId": null,
+          "date": "2025-12-30T18:30:00.000Z",
+          "description": "Int.Pd:6368278367:01-10-2025 to 31-12-2025",
+          "amount": 11,
+          "type": "credit",
+          "balance": 390.27
+        }
+      ]
+    },
+    {
+      "file": "real-idfc.xlsx",
+      "bankId": "in-idfc",
+      "userId": "test-user-0001",
+      "transactions": [
+        {
+          "hashInput": "2025-08-30T18:30:00.000Z|MONTHLY SAVINGS INTEREST CREDIT|63|46123.39|test-user-0001",
+          "hash": "e1666fa3cb94f1fff85c87dcdc7be52a3a8c914d2e53ea22d683d17f9d9b74bc",
+          "transactionId": null,
+          "date": "2025-08-30T18:30:00.000Z",
+          "description": "MONTHLY SAVINGS INTEREST CREDIT",
+          "amount": 63,
+          "type": "credit",
+          "balance": 46123.39
+        },
+        {
+          "hashInput": "2025-09-29T18:30:00.000Z|MONTHLY SAVINGS INTEREST CREDIT|118|34728|test-user-0001",
+          "hash": "24a0a489b5164ab5bebee21858ffa974aa982d68aee67f3b19b36a824b37c198",
+          "transactionId": null,
+          "date": "2025-09-29T18:30:00.000Z",
+          "description": "MONTHLY SAVINGS INTEREST CREDIT",
+          "amount": 118,
+          "type": "credit",
+          "balance": 34728
+        },
+        {
+          "hashInput": "2025-10-30T18:30:00.000Z|MONTHLY SAVINGS INTEREST CREDIT|56|23540.06|test-user-0001",
+          "hash": "250487feb6a0ef79ee9369db769811a8550b3cd782daec26cfdd3d2bcf3202ce",
+          "transactionId": null,
+          "date": "2025-10-30T18:30:00.000Z",
+          "description": "MONTHLY SAVINGS INTEREST CREDIT",
+          "amount": 56,
+          "type": "credit",
+          "balance": 23540.06
+        },
+        {
+          "hashInput": "2025-11-29T18:30:00.000Z|MONTHLY SAVINGS INTEREST CREDIT|71|57615.49|test-user-0001",
+          "hash": "99df76c202e8a46d4308d51039a2a25c6548be9cd099be98dd3c4f013073138e",
+          "transactionId": null,
+          "date": "2025-11-29T18:30:00.000Z",
+          "description": "MONTHLY SAVINGS INTEREST CREDIT",
+          "amount": 71,
+          "type": "credit",
+          "balance": 57615.49
+        },
+        {
+          "hashInput": "2025-12-30T18:30:00.000Z|MONTHLY SAVINGS INTEREST CREDIT|183|67710.44|test-user-0001",
+          "hash": "4a46a5dfd7fa5a662fcdf2f07de38ab6947c5d9e189b202f7f17fb6ea0742888",
+          "transactionId": null,
+          "date": "2025-12-30T18:30:00.000Z",
+          "description": "MONTHLY SAVINGS INTEREST CREDIT",
+          "amount": 183,
+          "type": "credit",
+          "balance": 67710.44
+        }
+      ]
+    },
+    {
+      "file": "real-idfc.pdf",
+      "bankId": "in-idfc",
+      "userId": "test-user-0001",
+      "transactions": [
+        {
+          "hashInput": "2025-08-30T18:30:00.000Z|MONTHLY SAVINGS INTEREST CREDIT|63|46123.39|test-user-0001",
+          "hash": "e1666fa3cb94f1fff85c87dcdc7be52a3a8c914d2e53ea22d683d17f9d9b74bc",
+          "transactionId": null,
+          "date": "2025-08-30T18:30:00.000Z",
+          "description": "MONTHLY SAVINGS INTEREST CREDIT",
+          "amount": 63,
+          "type": "credit",
+          "balance": 46123.39
+        },
+        {
+          "hashInput": "2025-09-29T18:30:00.000Z|MONTHLY SAVINGS INTEREST CREDIT|118|34728|test-user-0001",
+          "hash": "24a0a489b5164ab5bebee21858ffa974aa982d68aee67f3b19b36a824b37c198",
+          "transactionId": null,
+          "date": "2025-09-29T18:30:00.000Z",
+          "description": "MONTHLY SAVINGS INTEREST CREDIT",
+          "amount": 118,
+          "type": "credit",
+          "balance": 34728
+        },
+        {
+          "hashInput": "2025-10-30T18:30:00.000Z|MONTHLY SAVINGS INTEREST CREDIT|56|23540.06|test-user-0001",
+          "hash": "250487feb6a0ef79ee9369db769811a8550b3cd782daec26cfdd3d2bcf3202ce",
+          "transactionId": null,
+          "date": "2025-10-30T18:30:00.000Z",
+          "description": "MONTHLY SAVINGS INTEREST CREDIT",
+          "amount": 56,
+          "type": "credit",
+          "balance": 23540.06
+        },
+        {
+          "hashInput": "2025-11-29T18:30:00.000Z|MONTHLY SAVINGS INTEREST CREDIT|71|57615.49|test-user-0001",
+          "hash": "99df76c202e8a46d4308d51039a2a25c6548be9cd099be98dd3c4f013073138e",
+          "transactionId": null,
+          "date": "2025-11-29T18:30:00.000Z",
+          "description": "MONTHLY SAVINGS INTEREST CREDIT",
+          "amount": 71,
+          "type": "credit",
+          "balance": 57615.49
+        },
+        {
+          "hashInput": "2025-12-30T18:30:00.000Z|MONTHLY SAVINGS INTEREST CREDIT|183|67710.44|test-user-0001",
+          "hash": "4a46a5dfd7fa5a662fcdf2f07de38ab6947c5d9e189b202f7f17fb6ea0742888",
+          "transactionId": null,
+          "date": "2025-12-30T18:30:00.000Z",
+          "description": "MONTHLY SAVINGS INTEREST CREDIT",
+          "amount": 183,
+          "type": "credit",
+          "balance": 67710.44
+        }
+      ]
+    }
+  ]
+}

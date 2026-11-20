@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "baseUrl": "../..",
+    "paths": {
+      "@/lib/utils": [
+        "android/fixtures/golden-utils.ts"
+      ],
+      "@opendocsg/pdf2md": [
+        "android/fixtures/pdf2md-stub.ts"
+      ],
+      "@/*": [
+        "src/*"
+      ]
+    }
+  }
+}

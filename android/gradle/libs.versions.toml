@@ -12,7 +12,9 @@ coroutines = "1.10.2"
 junit = "4.13.2"
 kotlin = "2.3.20"
 material3 = "1.5.0"
-credentials = "1.6.0"
+credentials = "1.7.0-alpha03"
+profileinstaller = "1.4.1"
+pdfbox = "2.0.27.0"
 googleid = "1.2.1"
 okhttp = "5.5.1"
 serializationJson = "1.13.0"
@@ -44,6 +46,10 @@ googleid = { module = "com.google.android.libraries.identity.googleid:googleid",
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serializationJson" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
+
+androidx-profileinstaller = { module = "androidx.profileinstaller:profileinstaller", version.ref = "profileinstaller" }
+
+pdfbox-android = { module = "com.tom-roush:pdfbox-android", version.ref = "pdfbox" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }

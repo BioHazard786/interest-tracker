@@ -1,0 +1,10 @@
+# Kotak Mahindra Bank 
+
+#  Statement of Account 
+
+ 130 28 Feb 2025 UPI-TEST PAYEE-ref 500.00 2,692.39 
+ 131 31 Mar 2025 Int.Pd:1234567890:01-01-2025 to 31-03-2025 12.00 2,704.39 
+ 132 30 Jun 2025 Int.Pd:1234567890:01-04-2025 to 30-06-2025 1,012.34 3,716.73
+ 133 5 Jul 2025 Int.Pd:1234567890 7.00 3,723.73 
+ 134 9 Jul 2025 Int.Pd:malformed line without amounts 
+

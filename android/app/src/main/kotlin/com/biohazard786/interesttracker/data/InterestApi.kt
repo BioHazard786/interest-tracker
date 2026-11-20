@@ -1,5 +1,6 @@
 package com.biohazard786.interesttracker.data
 
+import com.biohazard786.interesttracker.parsing.ParsedTxn
 import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -31,8 +32,9 @@ class InterestApi(baseUrl: String, private val tokens: TokenStore) {
       .build()
 
   /** Exchanges a Google idToken for a better-auth bearer token and stores it. */
-  suspend fun signInWithGoogle(idToken: String) {
-    val body = json.encodeToString(SocialSignInBody("google", IdTokenBody(idToken)))
+  suspend fun signInWithGoogle(idToken: GoogleIdToken) {
+    // better-auth checks the token's nonce claim against this one.
+    val body = json.encodeToString(SocialSignInBody("google", IdTokenBody(idToken.token, idToken.nonce)))
     val request =
       Request.Builder()
         .url(base.newBuilder().addPathSegments("api/auth/sign-in/social").build())
@@ -77,6 +79,28 @@ class InterestApi(baseUrl: String, private val tokens: TokenStore) {
     ) {
       json.decodeFromString(it)
     }
+
+  /** The signed-in user's id. Statement hashes include it, so the phone needs it to match the web's. */
+  suspend fun userId(): String =
+    get("api/auth/get-session") { json.decodeFromString<SessionResponse?>(it) }?.user?.id
+      ?: throw ApiException(401, "You are signed out. Sign in again.")
+
+  /** Uploads parsed transactions; the server skips any whose hash it already has. Returns the server's message. */
+  suspend fun syncTransactions(bankId: String, transactions: List<ParsedTxn>): String {
+    val body =
+      SyncBody(
+        bankId,
+        transactions.map {
+          SyncTxn(it.transactionHash, it.amount, it.balance, it.date.toString(), it.type, it.description, it.transactionId)
+        },
+      )
+    val request =
+      Request.Builder()
+        .url(base.newBuilder().addPathSegments("api/v1/transactions/sync").build())
+        .post(json.encodeToString(body).toRequestBody(jsonType))
+        .build()
+    return call(request) { json.decodeFromString<ApiMessage>(it.body.string()).message }
+  }
 
   suspend fun donate(amount: Double) {
     val request =

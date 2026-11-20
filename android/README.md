@@ -22,6 +22,42 @@ cd android
 android run --apks=app/build/outputs/apk/debug/app-debug.apk
 ```
 
-## Not built yet
+## Uploading statements
 
-Statement upload and the native bank parsers (PNB, SBI, IDFC, Kotak). Upload from the web app for now.
+The **Upload** button opens a full-screen flow: pick a bank, add one or more statement files, review the interest
+rows found, then sync. Parsing happens on the phone (`parsing/`, ported from `src/lib/banking/parsers`); only the
+parsed rows are sent. Rows already on the server (same hash) are skipped, so re-uploading is safe.
+
+- CSV (PNB) and XLSX (SBI, IDFC) are parsed by hand-written readers, no extra libraries.
+- PDF (Kotak, IDFC) text comes from PDFBox. Password-protected PDFs ask for the password in the upload screen (the
+  tests cover it with `fixtures/statements/real-kotak-locked.pdf`); password-protected spreadsheets are refused with a message.
+- `./gradlew :app:testDebugUnitTest` checks every parser against the real web parsers' output, see
+  [fixtures/README.md](fixtures/README.md).
+
+## Releasing
+
+Pushing a tag that starts with `v` builds a signed release APK and publishes it as a GitHub release
+(`.github/workflows/android-release.yml`):
+
+```bash
+git tag v1.2.3          # v1.2.3-beta.1 makes a pre-release
+git push origin v1.2.3
+```
+
+- The tag sets the app version: `v1.2.3` -> versionName `1.2.3`, versionCode `10203` (`major*10000 + minor*100 + patch`, so
+  keep minor and patch under 100). Locally the version stays `1.0` / `1` unless you pass `-PversionName` / `-PversionCode`.
+- The release is signed with the same key as local builds. The workflow fails early if a secret is missing.
+- Repo settings the workflow reads (Settings -> Secrets and variables -> Actions):
+
+  | Name | Kind | From |
+  | --- | --- | --- |
+  | `ANDROID_KEYSTORE_BASE64` | secret | `base64 -w0 keystore/release-key.jks` |
+  | `ANDROID_KEYSTORE_PASSWORD` | secret | `storePassword` in `keystore.properties` |
+  | `ANDROID_KEY_ALIAS` | secret | `keyAlias` in `keystore.properties` |
+  | `ANDROID_KEY_PASSWORD` | secret | `keyPassword` in `keystore.properties` |
+  | `API_BASE_URL` | variable | `local.properties` |
+  | `GOOGLE_WEB_CLIENT_ID` | variable | `local.properties` |
+
+  Change one with `gh secret set NAME` / `gh variable set NAME`. Losing the keystore means installed copies can never be
+  updated, so keep a backup of `keystore/release-key.jks` somewhere safe.
+- The unit tests are not part of the release job: the fixtures they read are gitignored (`*.pdf`, `*.csv`, `*.xlsx`).
